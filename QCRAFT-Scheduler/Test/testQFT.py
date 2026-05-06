@@ -9,7 +9,6 @@ pathCircuit = 'circuit'
 
 urls = {
 "qft5" : "https://raw.githubusercontent.com/Pitu6505/QCRAFT-Scheduler-Original/refs/heads/Comprobacion-de-Circuitos-Malware/CircuitosGenerados/Victima/Qft5Qu.py",
-"CargaBaja" : "https://raw.githubusercontent.com/Pitu6505/QCRAFT-Scheduler-Original/refs/heads/Comprobacion-de-Circuitos-Malware/CircuitosGenerados/Agresores/Perfil1/Carga_BajaP1.py"
 }
 
 async def post_request(session, url, data):

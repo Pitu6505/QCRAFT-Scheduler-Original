@@ -1,24 +1,40 @@
-import requests
-import time
-import json 
-
+import aiohttp
+import asyncio
 url = 'http://localhost:8082/'
+
 pathURL = 'url'
 pathResult = 'result'
 pathCircuit = 'circuit'
 
-ids = []
-
-i=0
 
 urls = {
-
 "qft5" : "https://raw.githubusercontent.com/Pitu6505/QCRAFT-Scheduler-Original/refs/heads/Comprobacion-de-Circuitos-Malware/CircuitosGenerados/Victima/Qft5Qu.py",
 "CargaAlta" : "https://raw.githubusercontent.com/Pitu6505/QCRAFT-Scheduler-Original/refs/heads/Comprobacion-de-Circuitos-Malware/CircuitosGenerados/Agresores/Perfil3/Carga_AltaP3.py"
 }
 
-for elem in urls:
-    data = {"url":urls[elem] ,"shots" : 10000, "policy":"time"}
-    print(elem+":"+requests.post(url+pathCircuit, json = data).text)
+async def post_request(session, url, data):
+    async with session.post(url, json=data) as response:
+        return await response.text()
+
+async def main():
+    data_template = {
+        "url": "",
+        "shots": 10000,
+        "provider": ['ibm'],
+        "policy": "time"
+    }
+    async with aiohttp.ClientSession() as session:
+        tasks = []
+        for name, url_value in urls.items():
+            data = data_template.copy()
+            data["url"] = url_value
+            task = post_request(session, url + pathCircuit, data)
+            tasks.append(task)
+            
+        responses = await asyncio.gather(*tasks)
+        for response in responses:
+            print(response)
+
+asyncio.run(main())
 
 
