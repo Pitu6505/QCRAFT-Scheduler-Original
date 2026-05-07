@@ -52,7 +52,7 @@ class Scheduler:
         self.app.config['DB'] = os.getenv('DB')
         self.app.config['DB_PORT'] = os.getenv('DB_PORT')
         
-        self.max_qubits = 127
+        self.max_qubits = 156
         
         db_user = os.getenv('DB_USER')
         db_password = os.getenv('DB_PASSWORD')
@@ -220,7 +220,7 @@ class Scheduler:
                 update = {'$inc': {'value.' + k: v for k, v in value.items()}}
                 # Upsert the document
                 with self.result_lock: #In the case provider is both so the data retrieval is done after the first update finishes
-                    self.collection.update_one({'_id': str(id), 'circuit': circuit_name}, update, upsert=True)
+                    self.collection.update_one({'_id': str(id)}, update, upsert=True)
 
         return "Results stored successfully", 200  # Return a response
 

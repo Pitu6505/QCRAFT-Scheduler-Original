@@ -70,8 +70,8 @@ class SchedulerPolicies:
             unscheduler (str): The URL of the unscheduler
         """
         self.app = app
-        self.time_limit_seconds = 15*60
-        self.max_qubits = 127
+        self.time_limit_seconds = 30
+        self.max_qubits = 156
         self.machine_ibm = 'ibm_fez' # TODO maybe add machine as a parameter to the policy instead so it can be changed on each execution or just get the best machine just before the execution
         self.machine_aws = 'local'
         self.executeCircuitIBM = executeCircuitIBM()
@@ -120,7 +120,7 @@ class SchedulerPolicies:
         if not self.services[service_name].timers[provider].is_alive():
             self.services[service_name].timers[provider].start()
         n_qubits = sum(item[1] for item in self.services[service_name].queues[provider])
-        if abs(n_qubits - self.max_qubits) <= 5 or n_qubits >= self.max_qubits:
+        if n_qubits >= self.max_qubits and (service_name != 'Optimizacion_ML' and service_name != 'Optimizacion_PD'):
             self.services[service_name].timers[provider].execute_and_reset()
         return 'Data received', 200
         
@@ -174,6 +174,10 @@ class SchedulerPolicies:
                 counts = runAWS_save(machine,loc['circuit'],max(shots),[url[3] for url in urls],qb,[url[4] for url in urls],'') #Ejecutar el circuito y obtener el resultado
         except Exception as e:
             print(f"Error executing circuit: {e}")
+            return
+
+        if counts is None:
+            return
 
         print(counts.items())
 

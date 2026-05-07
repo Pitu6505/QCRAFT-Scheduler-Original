@@ -15,6 +15,7 @@ import numpy as np
 import re
 import threading
 from dotenv import load_dotenv
+from qiskit.transpiler.exceptions import TranspilerError
 
 class executeCircuitIBM:
     def __init__(self):
@@ -170,11 +171,23 @@ class executeCircuitIBM:
         Returns:
             int: The depth of the transpiled circuit.
         """
-        # Load your IBM Quantum account
-        with self.transpile_lock:
-            qc_basis = transpile(circuit, backend=backend)
-
+        qc_basis = self._transpile_for_ibm(backend, circuit)
         return qc_basis.depth()
+
+    def _transpile_for_ibm(self, backend:qiskit.providers.BackendV2, circuit:QuantumCircuit) -> QuantumCircuit:
+        """Transpile a circuit to IBM ISA form using the standard translator plugin."""
+        with self.transpile_lock:
+            try:
+                return transpile(
+                    circuit,
+                    backend=backend,
+                    translation_method='translator',
+                    optimization_level=0,
+                )
+            except TranspilerError as exc:
+                if 'ibm_dynamic_circuits' in str(exc):
+                    return transpile(circuit, backend=backend, optimization_level=0)
+                raise
 
 
     # Ejecutar el circuito
@@ -203,9 +216,9 @@ class executeCircuitIBM:
 
             service = self.service
             backend = service.backend(machine)
-            qc_basis = transpile(circuit, backend=backend)
+            qc_basis = self._transpile_for_ibm(backend, circuit)
             x = int(shots)
-            job = backend.run(qc_basis, shots=x) 
+            job = backend.run(qc_basis, shots=x)
             result = job.result()
             counts = result.get_counts()
             return counts
@@ -256,9 +269,7 @@ class executeCircuitIBM:
             service = self.service
             backend = service.backend(machine)
             sampler = Sampler(mode=backend)
-            #sampler.options.execution.rep_delay = 0.5 # set it to the maximum of the machine instead -> config.rep_delay_range[1]
-            with self.transpile_lock:
-                qc_basis = transpile(circuit, backend=backend)
+            qc_basis = self._transpile_for_ibm(backend, circuit)
             x = int(shots)
 
             while True:
