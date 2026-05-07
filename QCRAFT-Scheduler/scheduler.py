@@ -54,7 +54,14 @@ class Scheduler:
         
         self.max_qubits = 127
         
-        mongo_uri = f"mongodb://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{self.app.config['DB']}:{self.app.config['DB_PORT']}/"
+        db_user = os.getenv('DB_USER')
+        db_password = os.getenv('DB_PASSWORD')
+        db_auth = os.getenv('DB_AUTH', 'true').lower() not in {'0', 'false', 'no', 'off'}
+
+        if db_auth and db_user and db_password:
+            mongo_uri = f"mongodb://{db_user}:{db_password}@{self.app.config['DB']}:{self.app.config['DB_PORT']}/"
+        else:
+            mongo_uri = f"mongodb://{self.app.config['DB']}:{self.app.config['DB_PORT']}/"
         self.client = MongoClient(mongo_uri)
         self.db = self.client[os.getenv('DB_NAME')]
         self.collection = self.db[os.getenv('DB_COLLECTION')]

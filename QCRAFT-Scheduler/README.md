@@ -106,6 +106,8 @@ DB_NAME=name
 DB_COLLECTION=collection
 DB_USER=username
 DB_PASSWORD=password
+# Set DB_AUTH=false to connect without Mongo authentication
+# DB_AUTH=false
 
 # IBM Quantum configuration
 IBM_TOKEN=your_ibm_cloud_api_token
