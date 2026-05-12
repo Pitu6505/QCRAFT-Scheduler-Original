@@ -360,6 +360,7 @@ class Scheduler:
             url (str): The GitHub URL of the circuit
             shots (int): The number of shots to execute the circuit
             policy (str): The policy to execute the circuit. Default is 'time'
+            mitigation (str): The mitigation to execute the circuit. Default is None
 
         Returns:
             tuple: The response of the policy service with the scheduler task identification
@@ -375,6 +376,7 @@ class Scheduler:
             policy = request.json['policy']
         url = request.json['url']
         shots = request.json['shots']
+        mitigation = request.json.get('mitigation', None)
 
         if not isinstance(shots, int) or shots <= 0 or shots > 20000:
             return "Invalid shots value", 400

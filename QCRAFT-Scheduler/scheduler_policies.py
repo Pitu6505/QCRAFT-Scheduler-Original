@@ -102,6 +102,7 @@ class SchedulerPolicies:
             circuit_name (str): The name of the circuit            
             maxDepth (int): The depth of the circuit            
             provider (str): The provider of the circuit
+            mitigation (str): The mitigation to use
 
         Returns:
             tuple: The response of the request
@@ -115,7 +116,8 @@ class SchedulerPolicies:
         circuit_name = request.json['circuit_name']
         maxDepth = request.json['maxDepth']
         provider = request.json['provider']
-        data = (circuit, num_qubits, shots, user, circuit_name, maxDepth)
+        mitigation = request.json.get('mitigation', None)
+        data = (circuit, num_qubits, shots, user, circuit_name, maxDepth, mitigation)
         self.services[service_name].queues[provider].append(data)
         if not self.services[service_name].timers[provider].is_alive():
             self.services[service_name].timers[provider].start()
@@ -223,7 +225,13 @@ class SchedulerPolicies:
             provider (str): The provider of the circuit
         """
         composition_qubits = 0
-        for url, num_qubits, shots, user, circuit_name, depth in urls:
+        for url, num_qubits, shots, user, circuit_name, depth, mitigation in urls:
+            if mitigation == "temporal_isolation":
+                # Add a delay to the circuit
+                if provider == 'ibm':
+                    code.append(f"circuit.delay(100, unit='us')")
+                else:
+                    code.append(f"circuit.delay(100, unit='us')")
         #Change the q[...] and c[...] to q[composition_qubits+...] and c[composition_qubits+...]
             if 'algassert' in url: 
                 # Send a request to the translator, in the post, the field url will be url and the field d will be composition_qubits
