@@ -276,7 +276,9 @@ class Scheduler:
             awsShots = shots - ibmShots
 
     
-        user = uuid.uuid4().int
+        # Keep a readable id prefix but make it unique for repeated submissions.
+        circuit_name = url.split('/')[-1].split('.')[0]
+        user = f"{circuit_name}_{uuid.uuid4().hex[:8]}"
         #user = request.headers.get('X-Forwarded-For', request.remote_addr)
 
         document = {
@@ -377,7 +379,9 @@ class Scheduler:
         if not isinstance(shots, int) or shots <= 0 or shots > 20000:
             return "Invalid shots value", 400
 
-        user = uuid.uuid4().int
+        # Keep a readable id prefix but make it unique for repeated submissions.
+        circuit_name = url.split('/')[-1].split('.')[0]
+        user = f"{circuit_name}_{uuid.uuid4().hex[:8]}"
         #user = request.headers.get('X-Forwarded-For', request.remote_addr)
         document = {
         '_id': str(user),
@@ -393,8 +397,6 @@ class Scheduler:
                 return "URL must come from a raw GitHub file", 400
             response = requests.get(url)
             response.raise_for_status()
-            # Get the name of the file
-            circuit_name = url.split('/')[-1]
         except requests.exceptions.RequestException as e:
             print(f"Error getting URL content: {e}")
             return "Invalid URL", 400

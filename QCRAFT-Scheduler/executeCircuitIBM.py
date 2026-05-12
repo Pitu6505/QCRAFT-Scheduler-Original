@@ -147,8 +147,18 @@ class executeCircuitIBM:
                                 circuit.h(target_qubit)
                         else:
                             qubits = [qreg[int(arg.split('[')[1].strip(']').split('+')[0]) + int(arg.split('[')[1].strip(']').split('+')[1].strip(') ')) if '+' in arg else int(arg.split('[')[1].strip(']'))] for arg in args if '[' in arg]
-                            params = [eval(arg, {"__builtins__": None, "np": np}, {}) for param_str in args if '[' not in param_str for arg in param_str.split(',')] #If here, check if the circuit has pi instead of np.pi. Change pi to np.pi and it should work
-                            gate_operation = getattr(circuit, gate_name)(*params, *qubits) if params else getattr(circuit, gate_name)(*qubits)
+                            params = []
+                            kwargs = {}
+                            for arg in args:
+                                if '[' in arg:
+                                    continue
+                                if '=' in arg:
+                                    key, value = arg.split('=', 1)
+                                    kwargs[key.strip()] = eval(value.strip(), {"__builtins__": None, "np": np}, {})
+                                elif arg.strip() != '':
+                                    params.append(eval(arg.strip(), {"__builtins__": None, "np": np}, {}))
+
+                            gate_operation = getattr(circuit, gate_name)(*params, *qubits, **kwargs)
                             if condition:
                                 creg_name, val = condition.split(')')[0].split(',')
                                 val = int(val.strip())
