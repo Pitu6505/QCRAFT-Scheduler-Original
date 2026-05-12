@@ -32,3 +32,5 @@ circuit.barrier()
 circuit.measure(qreg_q[0], creg_c[0])
 circuit.measure(qreg_q[1], creg_c[1])
 circuit.measure(qreg_q[2], creg_c[2])
+
+print(circuit)
