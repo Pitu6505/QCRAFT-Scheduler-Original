@@ -123,7 +123,8 @@ class SchedulerPolicies:
         maxDepth = request.json['maxDepth']
         provider = request.json['provider']
         mitigation = request.json.get('mitigation', None)
-        data = (circuit, num_qubits, shots, user, circuit_name, maxDepth, mitigation)
+        spatial_distance = request.json.get('spatial_distance', 2)
+        data = (circuit, num_qubits, shots, user, circuit_name, maxDepth, mitigation, spatial_distance)
         self.services[service_name].queues[provider].append(data)
         if not self.services[service_name].timers[provider].is_alive():
             self.services[service_name].timers[provider].start()
@@ -154,11 +155,13 @@ class SchedulerPolicies:
             circuit = circuit + data + '\n'
         
         loc = {}
+        spatial_layout = None
         if provider == 'ibm':
             circuit_obj = self.executeCircuitIBM.code_to_circuit_ibm(circuit)
             # Comprobar políticas de mitigación que se aplican al objeto del circuito
             for url_data in urls:
                 mitigation_policy = url_data[6]
+                spatial_distance = url_data[7] if len(url_data) > 7 else 2
                 if mitigation_policy == "randomized_compiling":
                     # Aplicar Pauli Twirling manual
                     circuit_obj = self.aplicar_twirling_qcraft(circuit_obj)
@@ -168,6 +171,11 @@ class SchedulerPolicies:
                         circuit_obj = self.aplicar_dd_qcraft(circuit_obj, machine)
                     except Exception as e:
                         print(f"Warning applying dynamic decoupling: {e}")
+                if mitigation_policy == "spatial_isolation" or mitigation_policy == "spatial":
+                    try:
+                        spatial_layout = self.aplicar_spatial_isolation(circuit_obj, machine, qb, spatial_distance)
+                    except Exception as e:
+                        print(f"Warning applying spatial isolation: {e}")
             loc['circuit'] = circuit_obj
         else:
             loc['circuit'] = code_to_circuit_aws(circuit)
@@ -190,7 +198,15 @@ class SchedulerPolicies:
                 #backend = least_busy_backend_ibm(sum(qb))
                 # TODO escoger el backend más adecuado para el circuito
                 #counts = runIBM(self.machine_ibm,loc['circuit'],max(shots)) #Ejecutar el circuito y obtener el resultado
-                counts = self.executeCircuitIBM.runIBM_save(machine,loc['circuit'],max(shots),[url[3] for url in urls],qb,[url[4] for url in urls]) #Ejecutar el circuito y obtener el resultado
+                if spatial_layout is not None:
+                    print("Spatial isolation physical layout (virtual -> physical):")
+                    victim_qubits = qb[0] if qb else 0
+                    for virtual_index, physical_index in enumerate(spatial_layout):
+                        role = "victim" if virtual_index < victim_qubits else "aggressor"
+                        print(f"  {role}: q[{virtual_index}] -> physical {physical_index}")
+                else:
+                    print("Spatial isolation: no explicit physical layout was applied.")
+                counts = self.executeCircuitIBM.runIBM_save(machine,loc['circuit'],max(shots),[url[3] for url in urls],qb,[url[4] for url in urls], initial_layout=spatial_layout) #Ejecutar el circuito y obtener el resultado
             else:
                 counts = runAWS_save(machine,loc['circuit'],max(shots),[url[3] for url in urls],qb,[url[4] for url in urls],'') #Ejecutar el circuito y obtener el resultado
         except Exception as e:
@@ -244,7 +260,7 @@ class SchedulerPolicies:
             provider (str): The provider of the circuit
         """
         composition_qubits = 0
-        for url, num_qubits, shots, user, circuit_name, depth, mitigation in urls:
+        for url, num_qubits, shots, user, circuit_name, depth, mitigation, spatial_distance in urls:
             if mitigation == "temporal_isolation":
                 # Add a delay to the circuit
                 if provider == 'ibm':
@@ -578,3 +594,113 @@ class SchedulerPolicies:
 
         circuito_protegido = pm_dd.run(circuito_victima)
         return circuito_protegido
+
+    def _obtener_camino_fisico_maximo(self, coupling_map):
+        """Devuelve un camino físico largo en el coupling map para colocar segmentos separados."""
+        from collections import defaultdict, deque
+
+        grafo = defaultdict(set)
+        for qubit_a, qubit_b in coupling_map:
+            grafo[qubit_a].add(qubit_b)
+            grafo[qubit_b].add(qubit_a)
+
+        if not grafo:
+            return []
+
+        def bfs_camino(origen):
+            padre = {origen: None}
+            cola = deque([origen])
+            ultimo = origen
+
+            while cola:
+                actual = cola.popleft()
+                ultimo = actual
+                for vecino in grafo[actual]:
+                    if vecino not in padre:
+                        padre[vecino] = actual
+                        cola.append(vecino)
+
+            camino = []
+            nodo = ultimo
+            while nodo is not None:
+                camino.append(nodo)
+                nodo = padre[nodo]
+            return list(reversed(camino))
+
+        inicio = next(iter(grafo))
+        camino = bfs_camino(inicio)
+        if camino:
+            camino = bfs_camino(camino[-1])
+        return camino
+
+    def aplicar_spatial_isolation(self, circuit_obj, machine, qb, spatial_distance=2):
+        """
+        Calcula un initial_layout físico que deja un hueco entre la víctima y los agresores.
+        La víctima se asume como el primer circuito compuesto.
+
+        Returns:
+            list | None: Lista de qubits físicos para initial_layout, o None si no se puede garantizar la separación.
+        """
+        if machine == 'local':
+            return None
+
+        try:
+            backend = self.executeCircuitIBM.obtain_machine(self.executeCircuitIBM.service, machine)
+            coupling_map = backend.configuration().coupling_map
+            physical_qubits = backend.configuration().n_qubits
+            # Prefer the number of actually used (active) virtual qubits over the declared register size,
+            # because some circuits declare a large register but only use a subset of qubits.
+            # Compute the highest qubit index used in the circuit (active qubits).
+            active_indices = set()
+            for instr in circuit_obj.data:
+                for q in instr.qubits:
+                    try:
+                        idx = q.index
+                    except Exception:
+                        # Fallback: find index by identity in the circuit's qubits list
+                        idx = circuit_obj.qubits.index(q)
+                    active_indices.add(idx)
+
+            if active_indices:
+                total_virtual_qubits = max(active_indices) + 1
+            else:
+                total_virtual_qubits = circuit_obj.num_qubits
+
+            victim_qubits = qb[0] if qb else total_virtual_qubits
+            attacker_qubits = total_virtual_qubits - victim_qubits
+
+            required_path_length = total_virtual_qubits + max(spatial_distance, 0)
+            # Diagnostic prints
+            print(f"[spatial] active_indices={sorted(active_indices)}")
+            print(f"[spatial] total_virtual_qubits={total_virtual_qubits}, victim_qubits={victim_qubits}, attacker_qubits={attacker_qubits}")
+            print(f"[spatial] physical_qubits={physical_qubits}, requested_distance={spatial_distance}, required_path_length={required_path_length}")
+
+            if required_path_length > physical_qubits:
+                print(
+                    f"Warning: spatial isolation with distance {spatial_distance} needs at least "
+                    f"{required_path_length} physical qubits, but backend {machine} only has {physical_qubits}."
+                )
+                return None
+
+            camino = self._obtener_camino_fisico_maximo(coupling_map)
+            print(f"[spatial] longest_physical_path_length={len(camino)}")
+
+            if len(camino) < required_path_length:
+                print(f"Warning: Not enough connected physical qubits for spatial isolation with distance {spatial_distance}.")
+                return None
+
+            victim_path = camino[:victim_qubits]
+            attacker_start = victim_qubits + spatial_distance
+            attacker_path = camino[attacker_start:attacker_start + attacker_qubits]
+            initial_layout = victim_path + attacker_path
+
+            if len(initial_layout) != total_virtual_qubits:
+                print(f"Warning: Could not build a complete spatial layout for distance {spatial_distance}. initial_layout_len={len(initial_layout)} expected={total_virtual_qubits}")
+                return None
+
+            print(f"[spatial] initial_layout={initial_layout}")
+            return initial_layout
+
+        except Exception as e:
+            print(f"Warning applying spatial isolation: {e}. Using default layout.")
+            return None

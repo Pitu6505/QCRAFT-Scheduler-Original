@@ -164,7 +164,7 @@ class Scheduler:
         #        if list(line_dict.keys())[0] not in ids:
         #            file.write(line)        
 
-    def select_policy(self, url:str, num_qubits:int, shots:int, user:int, circuit_name:str, maxDepth:int, provider:str, policy:str) -> None:
+    def select_policy(self, url:str, num_qubits:int, shots:int, user:int, circuit_name:str, maxDepth:int, provider:str, policy:str, spatial_distance:int = None, mitigation: str = None) -> None:
         """
         Select the policy to execute the circuit and send a post request to the policy service
 
@@ -179,6 +179,10 @@ class Scheduler:
             policy (str): The policy to execute the circuit
         """
         data = {"circuit": url, "num_qubits": num_qubits, "shots": shots, "user": user, "circuit_name": circuit_name, "maxDepth": maxDepth, "provider": provider}
+        if spatial_distance is not None:
+            data["spatial_distance"] = spatial_distance
+        if mitigation is not None:
+            data["mitigation"] = mitigation
         requests.post(self.policy_service+policy, json=data)
         
 
@@ -253,6 +257,10 @@ class Scheduler:
             #return "Policy must be specified", 400
         else:
             policy = request.json['policy']     
+        spatial_distance = request.json.get('spatial_distance', 2)
+
+        if spatial_distance is not None and (not isinstance(spatial_distance, int) or spatial_distance < 0):
+            return "Invalid spatial_distance value", 400
 
         url =  request.json['url']
         
@@ -346,7 +354,7 @@ class Scheduler:
                     except:
                         print("Error in the request to the translator")
                     # TODO instead, parse it into a circuit and transpile it to get the depth (circuit.depth)
-                self.select_policy(url, num_qubits, shots, user, url, maxDepth, provider, policy)
+                self.select_policy(url, num_qubits, shots, user, url, maxDepth, provider, policy, spatial_distance)
     
         return str(user), 200  #return the id
         #return "Your id is "+str(user), 200  # Return a response
@@ -377,6 +385,10 @@ class Scheduler:
         url = request.json['url']
         shots = request.json['shots']
         mitigation = request.json.get('mitigation', None)
+        spatial_distance = request.json.get('spatial_distance', 2)
+
+        if spatial_distance is not None and (not isinstance(spatial_distance, int) or spatial_distance < 0):
+            return "Invalid spatial_distance value", 400
 
         if not isinstance(shots, int) or shots <= 0 or shots > 20000:
             return "Invalid shots value", 400
@@ -501,7 +513,7 @@ class Scheduler:
             num_qubits = len(qubits.values())
             provider = 'aws'
 
-        self.select_policy(circuit, num_qubits, shots, user, circuit_name, maxDepth, provider, policy)
+        self.select_policy(circuit, num_qubits, shots, user, circuit_name, maxDepth, provider, policy, spatial_distance, mitigation)
 
         return str(user), 200
 

@@ -184,7 +184,7 @@ class executeCircuitIBM:
         qc_basis = self._transpile_for_ibm(backend, circuit)
         return qc_basis.depth()
 
-    def _transpile_for_ibm(self, backend:qiskit.providers.BackendV2, circuit:QuantumCircuit) -> QuantumCircuit:
+    def _transpile_for_ibm(self, backend:qiskit.providers.BackendV2, circuit:QuantumCircuit, initial_layout=None) -> QuantumCircuit:
         """Transpile a circuit to IBM ISA form using the standard translator plugin."""
         with self.transpile_lock:
             try:
@@ -193,15 +193,16 @@ class executeCircuitIBM:
                     backend=backend,
                     translation_method='translator',
                     optimization_level=0,
+                    initial_layout=initial_layout,
                 )
             except TranspilerError as exc:
                 if 'ibm_dynamic_circuits' in str(exc):
-                    return transpile(circuit, backend=backend, optimization_level=0)
+                    return transpile(circuit, backend=backend, optimization_level=0, initial_layout=initial_layout)
                 raise
 
 
     # Ejecutar el circuito
-    def runIBM(self, machine:str, circuit:QuantumCircuit, shots:int) -> dict:
+    def runIBM(self, machine:str, circuit:QuantumCircuit, shots:int, initial_layout=None) -> dict:
         """
         Executes a circuit in the IBM cloud.
 
@@ -226,7 +227,7 @@ class executeCircuitIBM:
 
             service = self.service
             backend = service.backend(machine)
-            qc_basis = self._transpile_for_ibm(backend, circuit)
+            qc_basis = self._transpile_for_ibm(backend, circuit, initial_layout=initial_layout)
             x = int(shots)
             job = backend.run(qc_basis, shots=x)
             result = job.result()
@@ -250,7 +251,7 @@ class executeCircuitIBM:
         counts = result[0].data.creg_c.get_counts()
         return counts
 
-    def runIBM_save(self, machine:str, circuit:QuantumCircuit, shots:int,users:list, qubit_number:list, circuit_names:list) -> dict:
+    def runIBM_save(self, machine:str, circuit:QuantumCircuit, shots:int,users:list, qubit_number:list, circuit_names:list, initial_layout=None) -> dict:
         """
         Executes a circuit in the IBM cloud and saves the task id if the machine crashes.
 
@@ -279,7 +280,7 @@ class executeCircuitIBM:
             service = self.service
             backend = service.backend(machine)
             sampler = Sampler(mode=backend)
-            qc_basis = self._transpile_for_ibm(backend, circuit)
+            qc_basis = self._transpile_for_ibm(backend, circuit, initial_layout=initial_layout)
             x = int(shots)
 
             while True:
