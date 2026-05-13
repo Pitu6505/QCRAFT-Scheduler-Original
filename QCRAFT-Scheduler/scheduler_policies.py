@@ -10,6 +10,9 @@ from typing import Callable
 import random
 from qiskit import QuantumCircuit
 from qiskit.compiler import transpile
+from qiskit.circuit.library import XGate
+from qiskit.transpiler import PassManager, InstructionDurations
+from qiskit.transpiler.passes import ALAPScheduleAnalysis, PadDynamicalDecoupling
 
 class Policy:
     """
@@ -159,6 +162,12 @@ class SchedulerPolicies:
                 if mitigation_policy == "randomized_compiling":
                     # Aplicar Pauli Twirling manual
                     circuit_obj = self.aplicar_twirling_qcraft(circuit_obj)
+                if mitigation_policy == "dynamic_decoupling" or mitigation_policy == "dd":
+                    # Aplicar Desacoplamiento Dinámico Activo
+                    try:
+                        circuit_obj = self.aplicar_dd_qcraft(circuit_obj, machine)
+                    except Exception as e:
+                        print(f"Warning applying dynamic decoupling: {e}")
             loc['circuit'] = circuit_obj
         else:
             loc['circuit'] = code_to_circuit_aws(circuit)
@@ -545,3 +554,27 @@ class SchedulerPolicies:
                 circuito_twirled.append(op, qubits, clbits)
                 
         return circuito_twirled
+
+    def aplicar_dd_qcraft(self, circuito_victima: 'QuantumCircuit', machine: str) -> 'QuantumCircuit':
+        """
+        Aplica Desacoplamiento Dinámico (DD) rellenando huecos con secuencias X-X.
+        """
+        if machine == 'local':
+            return circuito_victima
+
+        # Obtener el backend de IBM desde el ejecutor
+        try:
+            backend = self.executeCircuitIBM.obtain_machine(self.executeCircuitIBM.service, machine)
+        except Exception as e:
+            raise RuntimeError(f"Cannot obtain backend for DD: {e}")
+
+        # Obtener duraciones e insertar DD
+        durations = InstructionDurations.from_backend(backend)
+        dd_sequence = [XGate(), XGate()]
+        pm_dd = PassManager([
+            ALAPScheduleAnalysis(durations),
+            PadDynamicalDecoupling(durations, dd_sequence)
+        ])
+
+        circuito_protegido = pm_dd.run(circuito_victima)
+        return circuito_protegido
