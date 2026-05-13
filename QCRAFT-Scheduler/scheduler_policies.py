@@ -7,6 +7,9 @@ from executeCircuitAWS import runAWS, runAWS_save, code_to_circuit_aws
 from ResettableTimer import ResettableTimer
 from threading import Thread
 from typing import Callable
+import random
+from qiskit import QuantumCircuit
+from qiskit.compiler import transpile
 
 class Policy:
     """
@@ -149,7 +152,14 @@ class SchedulerPolicies:
         
         loc = {}
         if provider == 'ibm':
-            loc['circuit'] = self.executeCircuitIBM.code_to_circuit_ibm(circuit)
+            circuit_obj = self.executeCircuitIBM.code_to_circuit_ibm(circuit)
+            # Comprobar políticas de mitigación que se aplican al objeto del circuito
+            for url_data in urls:
+                mitigation_policy = url_data[6]
+                if mitigation_policy == "randomized_compiling":
+                    # Aplicar Pauli Twirling manual
+                    circuit_obj = self.aplicar_twirling_qcraft(circuit_obj)
+            loc['circuit'] = circuit_obj
         else:
             loc['circuit'] = code_to_circuit_aws(circuit)
 
@@ -489,3 +499,49 @@ class SchedulerPolicies:
     
     def get_ibm(self):
         return self.executeCircuitIBM
+
+    @staticmethod
+    def aplicar_twirling_qcraft(circuito_victima: 'QuantumCircuit') -> 'QuantumCircuit':
+        """
+        Descompone el circuito a puertas base y aplica Pauli Twirling 
+        manualmente a todas las puertas CX para ofuscar la ejecución.
+        """
+        # 1. Bajar el circuito al nivel de hardware (extraer las CX)
+        puertas_base = ['cx', 'rz', 'sx', 'x', 'id']
+        circuito_base = transpile(circuito_victima, basis_gates=puertas_base, optimization_level=1)
+        
+        # 2. Crear un nuevo circuito vacío con la misma estructura
+        circuito_twirled = QuantumCircuit(*circuito_base.qregs, *circuito_base.cregs)
+        
+        # 3. Diccionario Matemático de Cancelación Pauli para la puerta CX
+        twirl_map = {
+            ('I', 'I'): ('I', 'I'), ('I', 'X'): ('I', 'X'), ('I', 'Y'): ('Z', 'Y'), ('I', 'Z'): ('Z', 'Z'),
+            ('X', 'I'): ('X', 'X'), ('X', 'X'): ('X', 'I'), ('X', 'Y'): ('Y', 'Z'), ('X', 'Z'): ('Y', 'Y'),
+            ('Y', 'I'): ('Y', 'X'), ('Y', 'X'): ('Y', 'I'), ('Y', 'Y'): ('X', 'Z'), ('Y', 'Z'): ('X', 'Y'),
+            ('Z', 'I'): ('Z', 'I'), ('Z', 'X'): ('Z', 'X'), ('Z', 'Y'): ('I', 'Y'), ('Z', 'Z'): ('I', 'Z')
+        }
+        paulis = ['I', 'X', 'Y', 'Z']
+        
+        # 4. Iterar y Ofuscar
+        for instruction in circuito_base.data:
+            op = instruction.operation
+            qubits = instruction.qubits
+            clbits = instruction.clbits
+            
+            if op.name == 'cx':
+                p_c_in = random.choice(paulis)
+                p_t_in = random.choice(paulis)
+                p_c_out, p_t_out = twirl_map[(p_c_in, p_t_in)]
+                
+                if p_c_in != 'I': getattr(circuito_twirled, p_c_in.lower())(qubits[0])
+                if p_t_in != 'I': getattr(circuito_twirled, p_t_in.lower())(qubits[1])
+                
+                circuito_twirled.append(op, qubits)
+                
+                if p_c_out != 'I': getattr(circuito_twirled, p_c_out.lower())(qubits[0])
+                if p_t_out != 'I': getattr(circuito_twirled, p_t_out.lower())(qubits[1])
+                
+            else:
+                circuito_twirled.append(op, qubits, clbits)
+                
+        return circuito_twirled

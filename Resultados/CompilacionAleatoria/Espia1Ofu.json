@@ -1,0 +1,52 @@
+[{
+  "_id": "circuito_espia_1_4ec41abb",
+  "circuit": "https://raw.githubusercontent.com/Pitu6505/QCRAFT-Scheduler-Original/refs/heads/Comprobacion-de-Circuitos-Malware/CircuitosGenerados/Espia/circuito_espia_1.py",
+  "value": {
+    "100": 361,
+    "101": 284,
+    "110": 136,
+    "111": 106,
+    "000": 3867,
+    "001": 3155,
+    "010": 1149,
+    "011": 942
+  }
+},
+{
+  "_id": "Qft5Qu_cd22e730",
+  "circuit": "https://raw.githubusercontent.com/Pitu6505/QCRAFT-Scheduler-Original/refs/heads/Comprobacion-de-Circuitos-Malware/CircuitosGenerados/Victima/Qft5Qu.py",
+  "value": {
+    "10000": 192,
+    "10001": 199,
+    "10010": 191,
+    "10011": 244,
+    "10100": 166,
+    "10101": 252,
+    "10110": 236,
+    "10111": 303,
+    "11000": 319,
+    "11001": 364,
+    "11010": 355,
+    "11011": 403,
+    "11100": 379,
+    "11101": 426,
+    "11110": 418,
+    "11111": 446,
+    "00000": 707,
+    "00001": 597,
+    "00010": 548,
+    "00011": 452,
+    "00100": 402,
+    "00101": 318,
+    "00110": 340,
+    "00111": 274,
+    "01000": 274,
+    "01001": 258,
+    "01010": 223,
+    "01011": 189,
+    "01100": 149,
+    "01101": 127,
+    "01110": 139,
+    "01111": 110
+  }
+}]

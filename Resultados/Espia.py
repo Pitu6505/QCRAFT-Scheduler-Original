@@ -24,7 +24,7 @@ def extraer_zero_count(ruta_archivo):
         )
 
 # 1. Cargar los conteos '000' de cada ventana temporal
-archivos = ['Espia/Espia1.json', 'Espia/Espia2.json', 'Espia/Espia3.json', 'Espia/Espia4.json']
+archivos = ['CompilacionAleatoria/Espia1Ofu.json', 'CompilacionAleatoria/Espia2Ofu.json', 'CompilacionAleatoria/Espia3Ofu.json', 'CompilacionAleatoria/Espia4Ofu.json']
 zero_counts = [extraer_zero_count(archivo) for archivo in archivos]
 
 # Las ventanas de tiempo (simuladas en pasos de la ventana, ej. 0, 1500, 3000, 4500 dt)
