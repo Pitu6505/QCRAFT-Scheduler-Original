@@ -199,24 +199,24 @@ class SchedulerPolicies:
                 # TODO escoger el backend más adecuado para el circuito
                 #counts = runIBM(self.machine_ibm,loc['circuit'],max(shots)) #Ejecutar el circuito y obtener el resultado
                 if spatial_layout is not None:
-                    print("Spatial isolation physical layout (virtual -> physical):")
+                    print("Spatial isolation physical layout (virtual -> physical):", flush=True)
                     victim_qubits = qb[0] if qb else 0
                     for virtual_index, physical_index in enumerate(spatial_layout):
                         role = "victim" if virtual_index < victim_qubits else "aggressor"
-                        print(f"  {role}: q[{virtual_index}] -> physical {physical_index}")
+                        print(f"  {role}: q[{virtual_index}] -> physical {physical_index}", flush=True)
                 else:
-                    print("Spatial isolation: no explicit physical layout was applied.")
+                    print("Spatial isolation: no explicit physical layout was applied.", flush=True)
                 counts = self.executeCircuitIBM.runIBM_save(machine,loc['circuit'],max(shots),[url[3] for url in urls],qb,[url[4] for url in urls], initial_layout=spatial_layout) #Ejecutar el circuito y obtener el resultado
             else:
                 counts = runAWS_save(machine,loc['circuit'],max(shots),[url[3] for url in urls],qb,[url[4] for url in urls],'') #Ejecutar el circuito y obtener el resultado
         except Exception as e:
-            print(f"Error executing circuit: {e}")
+            print(f"Error executing circuit: {e}", flush=True)
             return
 
         if counts is None:
             return
 
-        print(counts.items())
+        print(counts.items(), flush=True)
 
         data = {"counts": counts, "shots": shots, "provider": provider, "qb": qb, "users": [url[3] for url in urls], "circuit_names": [url[4] for url in urls]}
 
@@ -671,9 +671,9 @@ class SchedulerPolicies:
 
             required_path_length = total_virtual_qubits + max(spatial_distance, 0)
             # Diagnostic prints
-            print(f"[spatial] active_indices={sorted(active_indices)}")
-            print(f"[spatial] total_virtual_qubits={total_virtual_qubits}, victim_qubits={victim_qubits}, attacker_qubits={attacker_qubits}")
-            print(f"[spatial] physical_qubits={physical_qubits}, requested_distance={spatial_distance}, required_path_length={required_path_length}")
+            print(f"[spatial] active_indices={sorted(active_indices)}", flush=True)
+            print(f"[spatial] total_virtual_qubits={total_virtual_qubits}, victim_qubits={victim_qubits}, attacker_qubits={attacker_qubits}", flush=True)
+            print(f"[spatial] physical_qubits={physical_qubits}, requested_distance={spatial_distance}, required_path_length={required_path_length}", flush=True)
 
             if required_path_length > physical_qubits:
                 print(
@@ -683,10 +683,10 @@ class SchedulerPolicies:
                 return None
 
             camino = self._obtener_camino_fisico_maximo(coupling_map)
-            print(f"[spatial] longest_physical_path_length={len(camino)}")
+            print(f"[spatial] longest_physical_path_length={len(camino)}", flush=True)
 
             if len(camino) < required_path_length:
-                print(f"Warning: Not enough connected physical qubits for spatial isolation with distance {spatial_distance}.")
+                print(f"Warning: Not enough connected physical qubits for spatial isolation with distance {spatial_distance}.", flush=True)
                 return None
 
             victim_path = camino[:victim_qubits]
@@ -695,10 +695,10 @@ class SchedulerPolicies:
             initial_layout = victim_path + attacker_path
 
             if len(initial_layout) != total_virtual_qubits:
-                print(f"Warning: Could not build a complete spatial layout for distance {spatial_distance}. initial_layout_len={len(initial_layout)} expected={total_virtual_qubits}")
+                print(f"Warning: Could not build a complete spatial layout for distance {spatial_distance}. initial_layout_len={len(initial_layout)} expected={total_virtual_qubits}", flush=True)
                 return None
 
-            print(f"[spatial] initial_layout={initial_layout}")
+            print(f"[spatial] initial_layout={initial_layout}", flush=True)
             return initial_layout
 
         except Exception as e:

@@ -178,6 +178,7 @@ class Scheduler:
             provider (str): The provider to execute the circuit            
             policy (str): The policy to execute the circuit
         """
+        print(f"[scheduler] select_policy provider={provider} policy={policy} mitigation={mitigation} spatial_distance={spatial_distance}", flush=True)
         data = {"circuit": url, "num_qubits": num_qubits, "shots": shots, "user": user, "circuit_name": circuit_name, "maxDepth": maxDepth, "provider": provider}
         if spatial_distance is not None:
             data["spatial_distance"] = spatial_distance
@@ -386,6 +387,8 @@ class Scheduler:
         shots = request.json['shots']
         mitigation = request.json.get('mitigation', None)
         spatial_distance = request.json.get('spatial_distance', 2)
+
+        print(f"[scheduler] /circuit mitigation={mitigation} spatial_distance={spatial_distance} shots={shots}", flush=True)
 
         if spatial_distance is not None and (not isinstance(spatial_distance, int) or spatial_distance < 0):
             return "Invalid spatial_distance value", 400

@@ -49,8 +49,8 @@ def calcular_fidelidad_bhattacharyya(counts_ideal, counts_atacado, shots=10000):
 # ==========================================
 print("Cargando datos de los experimentos...")
 counts_base = cargar_conteos('Victima/qft.json')
-counts_ataque = cargar_conteos('Base/Perfil3/PerfilAlto3.json')
-counts_mitigado = cargar_conteos('DesacoplamientoDinamico/Perfil3/PerfilAlto3Desa.json')
+counts_ataque = cargar_conteos('Base/Perfil2/PerfilAlto2.json')
+counts_mitigado = cargar_conteos('Espacial/Perfil2/PerfilAlto2Isla.json')
 
 
 # ==========================================
@@ -59,10 +59,10 @@ counts_mitigado = cargar_conteos('DesacoplamientoDinamico/Perfil3/PerfilAlto3Des
 fid_ataque = calcular_fidelidad_bhattacharyya(counts_base, counts_ataque)
 fid_mitigado = calcular_fidelidad_bhattacharyya(counts_base, counts_mitigado)
 
-print("\n=== RESULTADOS DE MITIGACIÓN (Desacoplamiento Dinámico) ===")
+print("\n=== RESULTADOS DE MITIGACIÓN (Aislamiento Espacial a 2 saltos) ===")
 print(f"Fidelidad Ideal (Línea Base) : 100.00%")
 print(f"Fidelidad bajo Ataque (Nivel 50): {fid_ataque * 100:.2f}%")
-print(f"Fidelidad con Desacoplamiento Dinámico  : {fid_mitigado * 100:.2f}%")
+print(f"Fidelidad con Aislamiento Espacial  : {fid_mitigado * 100:.2f}%")
 print(f"-> ¡Recuperación de {(fid_mitigado - fid_ataque) * 100:.2f} puntos porcentuales!")
 
 # ==========================================
