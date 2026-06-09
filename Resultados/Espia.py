@@ -23,34 +23,33 @@ def extraer_zero_count(ruta_archivo):
             "Asegura que el JSON contenga un documento de circuito_espia_X.py."
         )
 
-# 1. Cargar los conteos '000' de cada ventana temporal
-archivos = ['CompilacionAleatoria/Espia1Ofu.json', 'CompilacionAleatoria/Espia2Ofu.json', 'CompilacionAleatoria/Espia3Ofu.json', 'CompilacionAleatoria/Espia4Ofu.json']
+# 1. Load the '000' counts for each time window
+archivos = ['Base/Espia/Espia1.json', 'Base/Espia/Espia2.json', 'Base/Espia/Espia3.json', 'Base/Espia/Espia4.json']
 zero_counts = [extraer_zero_count(archivo) for archivo in archivos]
 
-# Las ventanas de tiempo (simuladas en pasos de la ventana, ej. 0, 1500, 3000, 4500 dt)
-ventanas = ['Ventana 1\n(Inicio)', 'Ventana 2\n(Medio)', 'Ventana 3\n(Medio-Fin)', 'Ventana 4\n(Fin)']
+# Time windows (simulated in window steps, e.g. 0, 1500, 3000, 4500 dt)
+ventanas = ['Window 1\n(Start)', 'Window 2\n(Middle)', 'Window 3\n(Middle-End)', 'Window 4\n(End)']
 
-# 2. Generar el gráfico de Time Bucketing
+# 2. Generate the time bucketing chart
 plt.figure(figsize=(10, 6))
 plt.plot(ventanas, zero_counts, marker='o', linestyle='-', color='red', linewidth=2, markersize=8)
 
-# Añadir títulos y etiquetas (Formato académico)
-plt.title('Ataque de Canal Lateral (Snooping): Extracción de la Actividad de la Víctima', fontsize=14)
-plt.xlabel('Ventanas de Tiempo (Time Buckets)', fontsize=12)
-plt.ylabel('Zero Counts (Estado $|000\\rangle$)', fontsize=12)
+# Add titles and labels (academic format)
+plt.xlabel('Time Windows (Time Buckets)', fontsize=16)
+plt.ylabel('Zero Counts (State $|000\\rangle$)', fontsize=16)
 plt.grid(True, linestyle='--', alpha=0.7)
 
-# Anotaciones explicativas en el gráfico
-plt.annotate('Zona de Alta Densidad\nde CNOTs (Algoritmo QFT)', 
+# Explanatory annotation on the chart
+plt.annotate('High-Density CNOT Zone\n(QFT Algorithm)', 
              xy=(1, 3686), xytext=(1.5, 4000),
              arrowprops=dict(facecolor='black', shrink=0.05, width=1.5, headwidth=8),
-             fontsize=10, bbox=dict(boxstyle="round", alpha=0.1))
+             fontsize=16, bbox=dict(boxstyle="round", alpha=0.1))
 
 # Guardar la gráfica para el paper y mostrarla
 plt.savefig(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Ataque_Snooping_QFT.png'), dpi=300, bbox_inches='tight')
 plt.show()
 
-# Mostrar datos por consola
-print("=== RESULTADOS DEL SNOOPING (ZERO COUNTS) ===")
+# Show data in the console
+print("=== SNOOPING RESULTS (ZERO COUNTS) ===")
 for i, conteo in enumerate(zero_counts):
-    print(f"Espía {i+1} : {conteo} conteos")
+    print(f"Spy {i+1}: {conteo} counts")
