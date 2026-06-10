@@ -49,8 +49,8 @@ def calcular_fidelidad_bhattacharyya(counts_ideal, counts_atacado, shots=10000):
 # ==========================================
 print("Cargando datos de los experimentos...")
 counts_base = cargar_conteos('Victima/qft.json')
-counts_ataque = cargar_conteos('Base/Perfil3/PerfilAlto3.json')
-counts_mitigado = cargar_conteos('DesacoplamientoDinamico/Perfil3/PerfilAlto3Desa.json')
+counts_ataque = cargar_conteos('Base/Perfil2/PerfilAlto2.json')
+counts_mitigado = cargar_conteos('AislamientoEspacial/Perfil2.json')
 
 
 # ==========================================
@@ -59,10 +59,10 @@ counts_mitigado = cargar_conteos('DesacoplamientoDinamico/Perfil3/PerfilAlto3Des
 fid_ataque = calcular_fidelidad_bhattacharyya(counts_base, counts_ataque)
 fid_mitigado = calcular_fidelidad_bhattacharyya(counts_base, counts_mitigado)
 
-print("\n=== RESULTADOS DE MITIGACIÓN (Desacoplamiento Dinámico) ===")
+print("\n=== RESULTADOS DE MITIGACIÓN (Aislamiento Espacial) ===")
 print(f"Fidelidad Ideal (Línea Base) : 100.00%")
 print(f"Fidelidad bajo Ataque (Nivel 50): {fid_ataque * 100:.2f}%")
-print(f"Fidelidad con Desacoplamiento Dinámico  : {fid_mitigado * 100:.2f}%")
+print(f"Fidelidad con Aislamiento Espacial  : {fid_mitigado * 100:.2f}%")
 print(f"-> ¡Recuperación de {(fid_mitigado - fid_ataque) * 100:.2f} puntos porcentuales!")
 
 # ==========================================
@@ -84,7 +84,7 @@ width = 0.25  # Ancho de las barras
 fig, ax = plt.subplots(figsize=(10, 6))
 rects1 = ax.bar(x - width, valores_base, width, label='Línea Base (Ideal)', color='#2ca02c')
 rects2 = ax.bar(x, valores_ataque, width, label='Ataque Carga Alta (Sin Defensa)', color='#d62728')
-rects3 = ax.bar(x + width, valores_mitigado, width, label='Ataque Mitigado (QCRAFT Temporal)', color='#1f77b4')
+rects3 = ax.bar(x + width, valores_mitigado, width, label='Ataque Mitigado (Aislamiento Espacial)', color='#1f77b4')
 
 # Etiquetas y formato académico
 ax.set_ylabel('Conteos (Probabilidad)', fontsize=12)
@@ -100,6 +100,6 @@ ax.legend()
 plt.grid(axis='y', linestyle='--', alpha=0.5)
 
 # Guardar y mostrar
-plt.savefig('Comparacion_Mitigacion_Temporal.png', dpi=300, bbox_inches='tight')
-print("\nGráfica guardada como 'Comparacion_Mitigacion_Temporal.png'")
+plt.savefig('Comparacion_Mitigacion_Espacial.png', dpi=300, bbox_inches='tight')
+print("\nGráfica guardada como 'Comparacion_Mitigacion_Espacial.png'")
 plt.show()
